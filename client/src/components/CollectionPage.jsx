@@ -19,9 +19,9 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
     }, [])
 
     const handleRemoveSong = (e, songId) => {
-        e.stopPropagation() // Don't trigger the card click
+        e.stopPropagation()
         removeFromCollection(songId)
-        setCollection(getCollection()) // Refresh collection
+        setCollection(getCollection())
     }
 
     const handleCardClick = (song) => {

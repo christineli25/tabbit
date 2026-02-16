@@ -2,7 +2,6 @@ import './Header.css'
 
 function Header({ API_URL }) {
     const handleLogout = () => {
-        // Full page redirect to server - browser sends session cookie, no CORS issues
         const apiUrl = API_URL || 'http://127.0.0.1:8000'
         const returnTo = encodeURIComponent(window.location.origin + '/')
         window.location.href = `${apiUrl}/auth/logout?returnTo=${returnTo}`
