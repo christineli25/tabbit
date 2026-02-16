@@ -1,0 +1,169 @@
+.difficulty-selector-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .difficulty-selector {
+    background-color: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 24px;
+    min-width: 320px;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .difficulty-selector h3 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 20px;
+  }
+  
+  .detected-hint {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+  
+  .detected-hint .badge {
+    text-transform: capitalize;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  
+  .badge.easy {
+    background-color: #1db954;
+    color: white;
+  }
+  
+  .badge.intermediate {
+    background-color: #ffa500;
+    color: white;
+  }
+  
+  .badge.hard {
+    background-color: #e22134;
+    color: white;
+  }
+  
+  .difficulty-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  
+  .difficulty-option {
+    background-color: var(--bg-tertiary);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .difficulty-option:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--accent);
+  }
+  
+  .difficulty-option.active {
+    border-color: var(--accent);
+    background-color: rgba(29, 185, 84, 0.1);
+  }
+  
+  .difficulty-label {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 500;
+  }
+  
+  .difficulty-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: white;
+  }
+  
+  .difficulty-badge.easy {
+    background-color: #1db954;
+  }
+  
+  .difficulty-badge.intermediate {
+    background-color: #ffa500;
+  }
+  
+  .difficulty-badge.hard {
+    background-color: #e22134;
+  }
+  
+  .difficulty-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  
+  .cancel-btn,
+  .confirm-btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  
+  .cancel-btn {
+    background-color: transparent;
+    color: var(--text-secondary);
+  }
+  
+  .cancel-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+  }
+  
+  .confirm-btn {
+    background-color: var(--accent);
+    color: white;
+  }
+  
+  .confirm-btn:hover {
+    background-color: var(--accent-hover);
+  }

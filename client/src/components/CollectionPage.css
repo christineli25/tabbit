@@ -1,0 +1,420 @@
+.collection-page {
+    min-height: 100vh;
+    background-color: var(--bg-primary);
+    padding: 40px 20px;
+}
+
+.collection-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 40px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.page-header h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.page-subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+}
+
+.navigation-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding: 4px;
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    width: fit-content;
+    border: 1px solid var(--border);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.nav-tab {
+    background-color: transparent;
+    color: var(--text-secondary);
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 15px;
+    font-weight: 500;
+    position: relative;
+    outline: none;
+}
+
+.nav-tab:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.nav-tab.active {
+    background-color: var(--accent);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.3);
+}
+
+.nav-tab.active:hover {
+    background-color: var(--accent-hover);
+}
+
+.dropdown-container {
+    position: relative;
+}
+
+.dropdown-content {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 8px;
+    min-width: 180px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    z-index: 1000;
+    animation: dropdownFadeIn 0.2s ease-out;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-content button {
+    background-color: transparent;
+    color: var(--text-secondary);
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    width: 100%;
+    outline: none;
+}
+
+.dropdown-content button:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+    transform: translateX(4px);
+}
+
+.dropdown-content button:active {
+    transform: translateX(2px);
+}
+
+.dropdown-content button.active {
+    background-color: var(--accent);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.dropdown-content button.active:hover {
+    background-color: var(--accent-hover);
+}
+
+.collection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.collection-item {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.collection-item:hover {
+    background-color: var(--bg-hover);
+    transform: translateX(4px);
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.song-image-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--bg-tertiary);
+    flex-shrink: 0;
+}
+
+.song-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.song-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-hover) 100%);
+}
+
+.placeholder-icon {
+    font-size: 32px;
+    opacity: 0.5;
+}
+
+.song-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.song-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.song-artist {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.song-album {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.spotify-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: auto;
+    background-color: transparent;
+    border: none;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    padding: 0;
+}
+
+.spotify-link.easy {
+    color: #1db954;
+}
+
+.spotify-link.intermediate {
+    color: #ffa500;
+}
+
+.spotify-link.hard {
+    color: #e22134;
+}
+
+.spotify-link:hover {
+    opacity: 0.8;
+    transform: scale(1.1);
+}
+
+.remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: auto;
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.remove-btn:hover {
+    color: var(--error);
+    transform: scale(1.1);
+}
+
+.remove-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.spotify-link svg {
+    width: 28px;
+    height: 28px;
+}
+
+.difficulty-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+    text-indent: -9999px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.difficulty-badge.easy {
+    background-color: #1db954;
+}
+
+.difficulty-badge.intermediate {
+    background-color: #ffa500;
+}
+
+.difficulty-badge.hard {
+    background-color: #e22134;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.empty-state p {
+    margin-top: 24px;
+    font-size: 18px;
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.empty-subtitle {
+    font-size: 14px !important;
+    color: var(--text-tertiary) !important;
+    margin-top: 8px !important;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.loading-state p {
+    margin-top: 24px;
+    font-size: 18px;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .collection-page {
+        padding: 24px 16px;
+    }
+
+    .page-header h1 {
+        font-size: 36px;
+    }
+
+    .page-subtitle {
+        font-size: 16px;
+    }
+
+    .collection-item {
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .song-image-container {
+        width: 60px;
+        height: 60px;
+    }
+
+    .song-name {
+        font-size: 16px;
+    }
+
+    .song-artist {
+        font-size: 14px;
+    }
+
+    .song-actions {
+        gap: 8px;
+    }
+}
