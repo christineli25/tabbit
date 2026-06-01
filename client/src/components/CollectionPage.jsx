@@ -5,29 +5,16 @@ import './CollectionPage.css'
 import Header from './Header'
 
 function CollectionPage({ API_URL, setIsAuthenticated }) {
-    const [collection, setCollection] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
+    const [collection, setCollection] = useState(() => getCollection())
     const navigate = useNavigate()
     const location = useLocation()
     const [showDropdown, setShowDropdown] = useState(false)
     const [selectedFilter, setSelectedFilter] = useState('all')
 
-    useEffect(() => {
-        setCollection(getCollection())
-        setLoading(false)
-    }, [])
-
     const handleRemoveSong = (e, songId) => {
         e.stopPropagation()
         removeFromCollection(songId)
         setCollection(getCollection())
-    }
-
-    const handleCardClick = (song) => {
-        if (song.songsterrUrl) {
-            window.open(song.songsterrUrl, '_blank')
-        }
     }
 
     useEffect(() => {
@@ -42,26 +29,9 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
         }
     }, [showDropdown])
 
-    if (loading) {
-        return (
-            <div className="collection-page">
-                <div className="collection-container">
-                    <div className="loading-state">
-                        <div className="loading-spinner"></div>
-                        <p>Loading your collection...</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    const filteredCollection = collection.filter((song) => {
-        if(selectedFilter === 'all') {
-            return true
-        } else {
-            return song.difficulty === selectedFilter
-        }
-    })
+    const filteredCollection = collection.filter(song =>
+        selectedFilter === 'all' || song.difficulty === selectedFilter
+    )
 
     return (
         <div className="collection-page">
@@ -87,46 +57,19 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
                         </button>
                         {showDropdown && (
                             <div className="dropdown-content">
-                                <button 
-                                    className={selectedFilter === 'all' ? 'active' : ''}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedFilter('all');
-                                        setShowDropdown(false);
-                                    }}
-                                >
-                                    All
-                                </button>
-                                <button 
-                                    className={selectedFilter === 'easy' ? 'active' : ''}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedFilter('easy');
-                                        setShowDropdown(false);
-                                    }}
-                                >
-                                    Easy
-                                </button>
-                                <button 
-                                    className={selectedFilter === 'intermediate' ? 'active' : ''}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedFilter('intermediate');
-                                        setShowDropdown(false);
-                                    }}
-                                >
-                                    Intermediate
-                                </button>
-                                <button 
-                                    className={selectedFilter === 'hard' ? 'active' : ''}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedFilter('hard');
-                                        setShowDropdown(false);
-                                    }}
-                                >
-                                    Hard
-                                </button>
+                                {['all', 'easy', 'intermediate', 'hard'].map(f => (
+                                    <button
+                                        key={f}
+                                        className={selectedFilter === f ? 'active' : ''}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setSelectedFilter(f)
+                                            setShowDropdown(false)
+                                        }}
+                                    >
+                                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                                    </button>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -136,10 +79,10 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
                 {filteredCollection.length > 0 ? (
                     <div className="collection-list">
                         {filteredCollection.map((song) => (
-                            <div 
-                                className="collection-item" 
+                            <div
+                                className="collection-item"
                                 key={song.id}
-                                onClick={() => handleCardClick(song)}
+                                onClick={() => song.songsterrUrl && window.open(song.songsterrUrl, '_blank')}
                                 style={{ cursor: song.songsterrUrl ? 'pointer' : 'default' }}
                             >
                                 <div className="song-image-container">

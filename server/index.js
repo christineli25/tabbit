@@ -1,6 +1,6 @@
 const axios = require('axios');
 const cors = require('cors');
-const dotenv = require('dotenv').config();
+require('dotenv').config();
 const session = require('express-session');
 
 const express = require('express');
@@ -149,62 +149,6 @@ app.get('/api/me', async (req, res) => {
     
   });
 
-app.post('/api/logout', async (req, res) => {
-  try {
-    console.log('Logout request received, session ID:', req.sessionID);
-    
-    // Prevent caching of logout response
-    res.set({
-      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
-    
-    // Clear session data first
-    if (req.session) {
-      req.session.accessToken = null;
-      req.session.refreshToken = null;
-    }
-    
-    // Get cookie name from session config
-    const cookieName = 'connect.sid';
-    
-    // Destroy the session
-    return new Promise((resolve) => {
-      req.session.destroy((err) => {
-        // Always clear cookie, even if destroy had an error
-        // Clear with all possible options to ensure it's removed
-        res.clearCookie(cookieName, {
-          path: '/',
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax'
-        });
-        
-        // Also try clearing with different path options
-        res.clearCookie(cookieName, { path: '/' });
-        res.clearCookie(cookieName);
-        
-        if (err) {
-          console.error('Error destroying session:', err);
-          res.status(200).json({ success: false, authenticated: false, error: 'Session destroy failed but cookie cleared' });
-          return resolve();
-        }
-        
-        console.log('Session destroyed successfully, cookie cleared');
-        res.status(200).json({ success: true, authenticated: false, message: 'Logged out successfully' });
-        resolve();
-      });
-    });
-  } catch (error) {
-    console.error('Error in logout handler:', error);
-    // Still try to clear cookie
-    res.clearCookie('connect.sid', { path: '/' });
-    res.clearCookie('connect.sid');
-    return res.status(200).json({ success: false, authenticated: false, error: 'Logout error occurred' });
-  }
-})
-
 app.get('/api/playlists', async (req, res) => {
   const accessToken = req.session.accessToken;
   if (!accessToken) {
@@ -239,22 +183,16 @@ app.get('/api/playlist/:id', async (req, res) => {
         const response = await axios.get(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
             headers: {Authorization: `Bearer ${accessToken}`}
         });
-        const tracks = response.data.items.map(item => item.track);
-        const guitarSongs = [];
-        for (const track of tracks) {
-            if (track && track.name && track.artists?.[0]?.name) {
+        const tracks = response.data.items.map(item => item.track).filter(
+            track => track && track.name && track.artists?.[0]?.name
+        );
+        const results = await Promise.all(
+            tracks.map(async track => {
                 const songsterrUrl = await checkForGuitarTabsCached(track.name, track.artists[0].name);
-                if (songsterrUrl) { // If we got a URL, the song has tabs
-                    guitarSongs.push({
-                        ...track, 
-                        isGuitar: true,
-                        songsterrUrl: songsterrUrl // Add the URL to the song object
-                    });
-                }
-            }
-
-        }
-        return res.json(guitarSongs);
+                return songsterrUrl ? { ...track, isGuitar: true, songsterrUrl } : null;
+            })
+        );
+        return res.json(results.filter(Boolean));
     } catch (error) {
         console.error('Error fetching playlist:', error);
         return res.status(500).json({ error: 'Failed to fetch playlist' });
@@ -278,12 +216,24 @@ app.get('/api/audio-features/:id', async (req, res) => {
         }
       );
       
-      return res.json({
-        features: response.data
-      });
+      const { tempo = 120, energy = 0.5 } = response.data;
+      let score = 0;
+      if (tempo < 120) score -= 2;
+      else if (tempo > 120) score += 2;
+      if (energy < 0.5) score -= 1;
+      else if (energy > 0.5) score += 1;
+
+      let difficulty;
+      if (score < 0) difficulty = 'easy';
+      else if (score > 0) difficulty = 'hard';
+      else if (tempo < 115) difficulty = 'easy';
+      else if (tempo > 125) difficulty = 'hard';
+      else difficulty = 'intermediate';
+
+      return res.json({ features: response.data, difficulty });
     } catch (error) {
       console.error('Error fetching audio features:', error);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to fetch audio features'
       });
     }

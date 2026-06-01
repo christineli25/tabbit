@@ -2,17 +2,13 @@ import { useEffect } from 'react'
 import './LoginPage.css'
 
 function LoginPage({ API_URL }) {
-  const apiUrl = API_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const error = urlParams.get('error')
-    if (error) {
-      console.error('Authentication error:', error)
-    }
+    const error = new URLSearchParams(window.location.search).get('error')
+    if (error) console.error('Authentication error:', error)
   }, [])
 
   const handleLogin = () => {
-    window.location.href = `${apiUrl}/auth/login`
+    window.location.href = `${API_URL}/auth/login`
   }
 
   return (
