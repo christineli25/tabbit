@@ -2,6 +2,9 @@ const axios = require('axios');
 const cors = require('cors');
 require('dotenv').config();
 const session = require('express-session');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 const express = require('express');
 
@@ -61,7 +64,8 @@ app.get('/auth/login', async (req, res) => {
     `client_id=${CLIENT_ID}&` +
     `response_type=code&` +
     `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
-    `scope=${encodeURIComponent(scopes)}`;
+    `scope=${encodeURIComponent(scopes)}&` +
+    `show_dialog=true`;
     
     res.redirect(authUrl);
   });
@@ -93,8 +97,13 @@ app.get('/callback', async (req, res) => {
         const accessToken = response.data.access_token;
         const refreshToken = response.data.refresh_token;
 
+        const userResponse = await axios.get('https://api.spotify.com/v1/me', {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
         req.session.accessToken = accessToken;
         req.session.refreshToken = refreshToken;
+        req.session.userId = userResponse.data.id;
 
         res.redirect(`${frontendBase}/playlists`);
     } catch (error) {
@@ -149,6 +158,69 @@ app.get('/api/me', async (req, res) => {
     
   });
 
+app.get('/api/collection', async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+  const { data, error } = await supabase
+    .from('collection')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date_added', { ascending: false });
+
+  if (error) return res.status(500).json({ error: 'Failed to fetch collection' });
+  return res.json(data);
+});
+
+app.post('/api/collection', async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+  const { song_id, name, artist, album, image, spotify_url, songsterr_url, difficulty } = req.body;
+
+  const { data, error } = await supabase
+    .from('collection')
+    .insert({ user_id: userId, song_id, name, artist, album, image, spotify_url, songsterr_url, difficulty, status: 'want to learn' })
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: 'Failed to save song' });
+  return res.status(201).json(data);
+});
+
+app.delete('/api/collection/:songId', async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+  const { error } = await supabase
+    .from('collection')
+    .delete()
+    .eq('user_id', userId)
+    .eq('song_id', req.params.songId);
+
+  if (error) return res.status(500).json({ error: 'Failed to remove song' });
+  return res.json({ success: true });
+});
+
+app.patch('/api/collection/:songId', async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+  const { difficulty, status } = req.body;
+  const updates = {};
+  if (difficulty !== undefined) updates.difficulty = difficulty;
+  if (status !== undefined) updates.status = status;
+
+  const { error } = await supabase
+    .from('collection')
+    .update(updates)
+    .eq('user_id', userId)
+    .eq('song_id', req.params.songId);
+
+  if (error) return res.status(500).json({ error: 'Failed to update song' });
+  return res.json({ success: true });
+});
+
 app.get('/api/playlists', async (req, res) => {
   const accessToken = req.session.accessToken;
   if (!accessToken) {
@@ -169,27 +241,21 @@ app.get('/api/playlists', async (req, res) => {
 
 app.get('/api/playlist/:id', async (req, res) => {
     const accessToken = req.session.accessToken;
-    
     if (!accessToken) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const playlistId = req.params.id;
-    if (!playlistId) {
-        return res.status(400).json({ error: 'Playlist ID is required' });
-    }
-
     try {
-        const response = await axios.get(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-            headers: {Authorization: `Bearer ${accessToken}`}
+        const response = await axios.get(`https://api.spotify.com/v1/playlists/${req.params.id}/tracks`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
         });
         const tracks = response.data.items.map(item => item.track).filter(
             track => track && track.name && track.artists?.[0]?.name
         );
         const results = await Promise.all(
             tracks.map(async track => {
-                const songsterrUrl = await checkForGuitarTabsCached(track.name, track.artists[0].name);
-                return songsterrUrl ? { ...track, isGuitar: true, songsterrUrl } : null;
+                const tabInfo = await checkForGuitarTabsCached(track.name, track.artists[0].name);
+                return tabInfo ? { ...track, isGuitar: true, songsterrUrl: tabInfo.url, difficulty: tabInfo.difficulty } : null;
             })
         );
         return res.json(results.filter(Boolean));
@@ -199,126 +265,54 @@ app.get('/api/playlist/:id', async (req, res) => {
     }
 });
 
-app.get('/api/audio-features/:id', async (req, res) => {
-    const accessToken = req.session.accessToken;
-    
-    if (!accessToken) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-  
-    const trackId = req.params.id;
-  
-    try {
-      const response = await axios.get(
-        `https://api.spotify.com/v1/audio-features/${trackId}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        }
-      );
-      
-      const { tempo = 120, energy = 0.5 } = response.data;
-      let score = 0;
-      if (tempo < 120) score -= 2;
-      else if (tempo > 120) score += 2;
-      if (energy < 0.5) score -= 1;
-      else if (energy > 0.5) score += 1;
-
-      let difficulty;
-      if (score < 0) difficulty = 'easy';
-      else if (score > 0) difficulty = 'hard';
-      else if (tempo < 115) difficulty = 'easy';
-      else if (tempo > 125) difficulty = 'hard';
-      else difficulty = 'intermediate';
-
-      return res.json({ features: response.data, difficulty });
-    } catch (error) {
-      console.error('Error fetching audio features:', error);
-      return res.status(500).json({
-        error: 'Failed to fetch audio features'
-      });
-    }
-  });
 
 async function checkForGuitarTabs(trackName, artistName) {
-    try {
-      const searchQuery = `${trackName} ${artistName}`;
-      
-      // Songsterr API endpoint changed - now we need to parse HTML response
-      const response = await axios.get(
-        'https://www.songsterr.com/a/wa/search',
-        {
-          params: {
-            pattern: searchQuery
-          },
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        }
-      );
-      
-      const html = response.data;
-      
-      // Songs are in HTML with data-song attribute
-      // Each song has: <div data-field="name">song title</div> and <div data-field="artist">artist name</div>
-      // Extract all song entries from the HTML
-      const songEntries = [];
-      const songLinkRegex = /<a[^>]*data-song[^>]*>([\s\S]*?)<\/a>/g;
-      let match;
-      
-      while ((match = songLinkRegex.exec(html)) !== null) {
-        const fullLinkTag = match[0]; // The entire <a> tag including href
-        const songHtml = match[1]; // The content inside the <a> tag
-        
-        // Extract the href URL from the <a> tag
-        const hrefMatch = fullLinkTag.match(/href="([^"]+)"/);
-        const songsterrUrl = hrefMatch ? hrefMatch[1] : null;
-        
-        // Extract song name
-        const nameMatch = songHtml.match(/<div[^>]*data-field="name"[^>]*>([^<]+)<\/div>/);
-        // Extract artist name
-        const artistMatch = songHtml.match(/<div[^>]*data-field="artist"[^>]*>([^<]+)<\/div>/);
+  try {
+    const response = await axios.get('https://www.songsterr.com/api/songs', {
+      params: { pattern: `${trackName} ${artistName}` }
+    });
 
-        if (nameMatch && artistMatch) {
-          songEntries.push({
-            title: nameMatch[1].trim(),
-            artist: artistMatch[1].trim(),
-            url: songsterrUrl
-          });
-        }
-      }
-      
-      if (songEntries.length === 0) {
-        return null;
-      }
-      
-      // Normalize strings for comparison
-      const normalize = (str) => str.toLowerCase().trim().replace(/[^\w\s]/g, '');
-      const normalizedTrack = normalize(trackName);
-      const normalizedArtist = normalize(artistName);
-      
-      // Check if any song matches (fuzzy match)
-      for (const song of songEntries) {
-        const songTitle = normalize(song.title);
-        const songArtist = normalize(song.artist);
-        
-        // Check if track name and artist name are found in the song data
-        if (songTitle.includes(normalizedTrack) || normalizedTrack.includes(songTitle)) {
-          if (songArtist.includes(normalizedArtist) || normalizedArtist.includes(songArtist)) {
-            // Return the full Songsterr URL
-            const fullUrl = song.url.startsWith('http') 
-              ? song.url 
-              : `https://www.songsterr.com${song.url}`;
-            return fullUrl;
-          }
-        }
-      }
-      
-      return null; // Return null when no match found
-    } catch (error) {
-      console.error('Error checking tabs:', error.message);
-      return null; // Return null on error
-    }
+    const songs = response.data;
+    if (!songs?.length) return null;
+
+    const normalize = (str) => str.toLowerCase().trim().replace(/[^\w\s]/g, '');
+    const normalizedTrack = normalize(trackName);
+    const normalizedArtist = normalize(artistName);
+
+    const match = songs.find(song => {
+      const title = normalize(song.title);
+      const artist = normalize(song.artist);
+      return (title.includes(normalizedTrack) || normalizedTrack.includes(title)) &&
+             (artist.includes(normalizedArtist) || normalizedArtist.includes(artist));
+    });
+
+    if (!match) return null;
+
+    const guitarTracks = match.tracks?.filter(t =>
+      t.instrument?.toLowerCase().includes('guitar')
+    ) || [];
+
+    if (!guitarTracks.length) return null;
+
+    const difficulties = guitarTracks.map(t => t.difficulty).filter(Boolean);
+    const avg = difficulties.length
+      ? difficulties.reduce((a, b) => a + b, 0) / difficulties.length
+      : null;
+
+    const difficulty = !avg ? 'intermediate'
+      : avg <= 2 ? 'easy'
+      : avg <= 3.5 ? 'intermediate'
+      : 'hard';
+
+    const slug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const url = `https://www.songsterr.com/a/wsa/${slug(match.artist)}-${slug(match.title)}-tab-s${match.songId}`;
+
+    return { url, difficulty };
+  } catch (error) {
+    console.error('Error checking tabs:', error.message);
+    return null;
   }
+}
 
 const tabsCache = new Map();
 

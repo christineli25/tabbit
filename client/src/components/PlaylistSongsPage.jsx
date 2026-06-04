@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { saveToCollection, isInCollection, removeFromCollection } from '../utils/collectionStorage'
 import './PlaylistSongsPage.css'
 import Header from './Header'
 import Notification from './Notification'
@@ -13,6 +12,7 @@ function PlaylistSongsPage({ API_URL, setIsAuthenticated }) {
   const [songs, setSongs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [savedSongIds, setSavedSongIds] = useState([])
   const [notification, setNotification] = useState(null)
   const [showDifficultySelector, setShowDifficultySelector] = useState(false)
   const [selectedSong, setSelectedSong] = useState(null)
@@ -20,6 +20,7 @@ function PlaylistSongsPage({ API_URL, setIsAuthenticated }) {
 
   useEffect(() => {
     fetchPlaylistSongs()
+    fetchSavedIds()
   }, [id])
 
   const fetchPlaylistSongs = async () => {
@@ -41,34 +42,45 @@ function PlaylistSongsPage({ API_URL, setIsAuthenticated }) {
     }
   }
 
+  const fetchSavedIds = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/collection`, { withCredentials: true })
+      setSavedSongIds(data.map(s => s.song_id))
+    } catch {
+      // non-blocking
+    }
+  }
+
   const handleSaveClick = async (e, song) => {
     e.stopPropagation()
 
-    if (isInCollection(song.id)) {
-      removeFromCollection(song.id)
+    if (savedSongIds.includes(song.id)) {
+      await axios.delete(`${API_URL}/api/collection/${song.id}`, { withCredentials: true })
+      setSavedSongIds(savedSongIds.filter(sid => sid !== song.id))
       setNotification('Removed from collection')
       setTimeout(() => setNotification(null), 3000)
       return
     }
 
-    let difficulty = 'intermediate'
-    try {
-      const { data } = await axios.get(`${API_URL}/api/audio-features/${song.id}`, {
-        withCredentials: true
-      })
-      difficulty = data.difficulty || 'intermediate'
-    } catch {
-      // fall through to default
-    }
-
-    setDetectedDifficulty(difficulty)
+    setDetectedDifficulty(song.difficulty || 'intermediate')
     setSelectedSong(song)
     setShowDifficultySelector(true)
   }
 
-  const handleDifficultySelected = (difficulty) => {
+  const handleDifficultySelected = async (difficulty) => {
     if (selectedSong) {
-      saveToCollection(selectedSong, difficulty)
+      await axios.post(`${API_URL}/api/collection`, {
+        song_id: selectedSong.id,
+        name: selectedSong.name,
+        artist: selectedSong.artists?.[0]?.name || 'Unknown Artist',
+        album: selectedSong.album?.name || '',
+        image: selectedSong.album?.images?.[0]?.url || '',
+        spotify_url: selectedSong.external_urls?.spotify || '',
+        songsterr_url: selectedSong.songsterrUrl || '',
+        difficulty
+      }, { withCredentials: true })
+
+      setSavedSongIds([...savedSongIds, selectedSong.id])
       setNotification('Added to collection')
       setTimeout(() => setNotification(null), 3000)
     }
@@ -141,11 +153,11 @@ function PlaylistSongsPage({ API_URL, setIsAuthenticated }) {
                     </div>
                     <div className="song-actions">
                       <button
-                        className={`save-btn${isInCollection(song.id) ? ' saved' : ''}`}
+                        className={`save-btn${savedSongIds.includes(song.id) ? ' saved' : ''}`}
                         onClick={(e) => handleSaveClick(e, song)}
-                        title={isInCollection(song.id) ? 'Remove from collection' : 'Add to collection'}
+                        title={savedSongIds.includes(song.id) ? 'Remove from collection' : 'Add to collection'}
                       >
-                        {isInCollection(song.id) ? '✓' : '+'}
+                        {savedSongIds.includes(song.id) ? '✓' : '+'}
                       </button>
                       {song.external_urls?.spotify && (
                         <button

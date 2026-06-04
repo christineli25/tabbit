@@ -147,6 +147,69 @@
     background-color: var(--accent-hover);
 }
 
+.status-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.status-filter-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background-color: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-filter-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.status-filter-btn.active {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.status-badge:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+.status-badge.want-to-learn {
+    background-color: rgba(150, 150, 150, 0.15);
+    color: var(--text-secondary);
+}
+
+.status-badge.learning {
+    background-color: rgba(29, 161, 242, 0.15);
+    color: #1da1f2;
+}
+
+.status-badge.learned {
+    background-color: rgba(29, 185, 84, 0.15);
+    color: #1db954;
+}
+
 .collection-list {
     display: flex;
     flex-direction: column;
@@ -267,19 +330,9 @@
     transition: all 0.2s ease;
     text-decoration: none;
     padding: 0;
-}
-
-.spotify-link.easy {
     color: #1db954;
 }
 
-.spotify-link.intermediate {
-    color: #ffa500;
-}
-
-.spotify-link.hard {
-    color: #e22134;
-}
 
 .spotify-link:hover {
     opacity: 0.8;
@@ -317,28 +370,35 @@
 }
 
 .difficulty-badge {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0;
-    text-indent: -9999px;
-    overflow: hidden;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+    border: none;
+    cursor: pointer;
     flex-shrink: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.difficulty-badge:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
 }
 
 .difficulty-badge.easy {
-    background-color: #1db954;
+    background-color: rgba(29, 185, 84, 0.15);
+    color: #1db954;
 }
 
 .difficulty-badge.intermediate {
-    background-color: #ffa500;
+    background-color: rgba(255, 165, 0, 0.15);
+    color: #ffa500;
 }
 
 .difficulty-badge.hard {
-    background-color: #e22134;
+    background-color: rgba(226, 33, 52, 0.15);
+    color: #e22134;
 }
 
 .empty-state {

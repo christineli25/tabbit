@@ -1,20 +1,56 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { getCollection, removeFromCollection } from '../utils/collectionStorage'
+import axios from 'axios'
 import './CollectionPage.css'
 import Header from './Header'
+import DifficultySelector from './DifficultySelector'
+
+const STATUS_CYCLE = ['want to learn', 'learning', 'learned']
 
 function CollectionPage({ API_URL, setIsAuthenticated }) {
-    const [collection, setCollection] = useState(() => getCollection())
+    const [collection, setCollection] = useState([])
     const navigate = useNavigate()
     const location = useLocation()
     const [showDropdown, setShowDropdown] = useState(false)
     const [selectedFilter, setSelectedFilter] = useState('all')
+    const [selectedStatus, setSelectedStatus] = useState('all')
+    const [editingSong, setEditingSong] = useState(null)
 
-    const handleRemoveSong = (e, songId) => {
+    useEffect(() => {
+        axios.get(`${API_URL}/api/collection`, { withCredentials: true })
+            .then(({ data }) => setCollection(data))
+            .catch(() => {})
+    }, [])
+
+    const handleRemoveSong = async (e, songId) => {
         e.stopPropagation()
-        removeFromCollection(songId)
-        setCollection(getCollection())
+        await axios.delete(`${API_URL}/api/collection/${songId}`, { withCredentials: true })
+        setCollection(collection.filter(s => s.song_id !== songId))
+    }
+
+    const handleDifficultyChange = async (difficulty) => {
+        await axios.patch(
+            `${API_URL}/api/collection/${editingSong.song_id}`,
+            { difficulty },
+            { withCredentials: true }
+        )
+        setCollection(collection.map(s =>
+            s.song_id === editingSong.song_id ? { ...s, difficulty } : s
+        ))
+        setEditingSong(null)
+    }
+
+    const handleStatusClick = async (e, song) => {
+        e.stopPropagation()
+        const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(song.status) + 1) % STATUS_CYCLE.length]
+        await axios.patch(
+            `${API_URL}/api/collection/${song.song_id}`,
+            { status: next },
+            { withCredentials: true }
+        )
+        setCollection(collection.map(s =>
+            s.song_id === song.song_id ? { ...s, status: next } : s
+        ))
     }
 
     useEffect(() => {
@@ -24,13 +60,12 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
             }
         }
         document.addEventListener('mousedown', handleClickOutside)
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
+        return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [showDropdown])
 
     const filteredCollection = collection.filter(song =>
-        selectedFilter === 'all' || song.difficulty === selectedFilter
+        (selectedFilter === 'all' || song.difficulty === selectedFilter) &&
+        (selectedStatus === 'all' || song.status === selectedStatus)
     )
 
     return (
@@ -42,14 +77,14 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
                     <p className="page-subtitle">All your saved guitar songs</p>
                 </div>
                 <nav className="navigation-bar">
-                    <button 
+                    <button
                         className={`nav-tab ${location.pathname === '/playlists' ? 'active' : ''}`}
                         onClick={() => navigate('/playlists')}
                     >
                         Playlists
                     </button>
                     <div className="dropdown-container">
-                        <button 
+                        <button
                             className={`nav-tab ${location.pathname === '/collection' ? 'active' : ''}`}
                             onClick={() => setShowDropdown(!showDropdown)}
                         >
@@ -73,17 +108,28 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
                             </div>
                         )}
                     </div>
-                    
                 </nav>
+
+                <div className="status-filters">
+                    {['all', ...STATUS_CYCLE].map(s => (
+                        <button
+                            key={s}
+                            className={`status-filter-btn ${selectedStatus === s ? 'active' : ''}`}
+                            onClick={() => setSelectedStatus(s)}
+                        >
+                            {s === 'all' ? 'All' : s}
+                        </button>
+                    ))}
+                </div>
 
                 {filteredCollection.length > 0 ? (
                     <div className="collection-list">
                         {filteredCollection.map((song) => (
                             <div
                                 className="collection-item"
-                                key={song.id}
-                                onClick={() => song.songsterrUrl && window.open(song.songsterrUrl, '_blank')}
-                                style={{ cursor: song.songsterrUrl ? 'pointer' : 'default' }}
+                                key={song.song_id}
+                                onClick={() => song.songsterr_url && window.open(song.songsterr_url, '_blank')}
+                                style={{ cursor: song.songsterr_url ? 'pointer' : 'default' }}
                             >
                                 <div className="song-image-container">
                                     {song.image ? (
@@ -97,17 +143,29 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
                                 <div className="song-info">
                                     <h3 className="song-name">{song.name}</h3>
                                     <p className="song-artist">{song.artist}</p>
-                                    {song.album && (
-                                        <p className="song-album">{song.album}</p>
-                                    )}
+                                    {song.album && <p className="song-album">{song.album}</p>}
                                 </div>
                                 <div className="song-actions">
-                                    {song.spotifyUrl && (
-                                        <a 
-                                            href={song.spotifyUrl} 
-                                            target="_blank" 
+                                    <button
+                                        className={`status-badge ${song.status?.replace(/\s+/g, '-')}`}
+                                        onClick={(e) => handleStatusClick(e, song)}
+                                        title="Click to update status"
+                                    >
+                                        {song.status || 'want to learn'}
+                                    </button>
+                                    <button
+                                        className={`difficulty-badge ${song.difficulty}`}
+                                        onClick={(e) => { e.stopPropagation(); setEditingSong(song) }}
+                                        title="Change difficulty"
+                                    >
+                                        {song.difficulty}
+                                    </button>
+                                    {song.spotify_url && (
+                                        <a
+                                            href={song.spotify_url}
+                                            target="_blank"
                                             rel="noopener noreferrer"
-                                            className={`spotify-link ${song.difficulty}`}
+                                            className="spotify-link"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
@@ -117,7 +175,7 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
                                     )}
                                     <button
                                         className="remove-btn"
-                                        onClick={(e) => handleRemoveSong(e, song.id)}
+                                        onClick={(e) => handleRemoveSong(e, song.song_id)}
                                         title="Remove from collection"
                                     >
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -137,8 +195,16 @@ function CollectionPage({ API_URL, setIsAuthenticated }) {
                     </div>
                 )}
             </div>
+
+            {editingSong && (
+                <DifficultySelector
+                    detectedDifficulty={editingSong.difficulty}
+                    onSelect={handleDifficultyChange}
+                    onCancel={() => setEditingSong(null)}
+                />
+            )}
         </div>
     )
 }
 
-export default CollectionPage;
+export default CollectionPage
