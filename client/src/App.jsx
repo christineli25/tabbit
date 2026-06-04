@@ -24,7 +24,6 @@ function App() {
       })
       setIsAuthenticated(response.data.authenticated === true)
     } catch (error) {
-      // If 401 or any error, user is not authenticated
       setIsAuthenticated(false)
     } finally {
       setLoading(false)

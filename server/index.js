@@ -10,7 +10,6 @@ const express = require('express');
 
 const app = express();
 
-// middleware
 
 const allowedOrigins = [
   'http://127.0.0.1:5173',
@@ -55,7 +54,6 @@ app.listen(PORT, '127.0.0.1', () => {
   
 
 app.get('/auth/login', async (req, res) => {
-    // 1. Get input (from req)
     const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
     const REDIRECT_URI = process.env.REDIRECT_URI;
     const scopes = 'user-read-private playlist-read-private';
@@ -132,7 +130,6 @@ app.get('/auth/logout', (req, res) => {
 });
 
 app.get('/api/me', async (req, res) => {
-    // Check if session exists and has accessToken
     if (!req.session || !req.session.accessToken) {
       return res.status(401).json({ authenticated: false, error: 'Not authenticated' });
     }
@@ -149,7 +146,6 @@ app.get('/api/me', async (req, res) => {
       });
     } catch (error) {
       console.error('Error fetching user:', error);
-      // If token is invalid, clear session
       if (req.session) {
         req.session.destroy(() => {});
       }

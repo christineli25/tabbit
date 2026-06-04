@@ -46,9 +46,7 @@ function PlaylistSongsPage({ API_URL, setIsAuthenticated }) {
     try {
       const { data } = await axios.get(`${API_URL}/api/collection`, { withCredentials: true })
       setSavedSongIds(data.map(s => s.song_id))
-    } catch {
-      // non-blocking
-    }
+    } catch {}
   }
 
   const handleSaveClick = async (e, song) => {
