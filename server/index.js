@@ -1,4 +1,5 @@
 const axios = require('axios');
+const cheerio = require('cheerio');
 const cors = require('cors');
 require('dotenv').config();
 const session = require('express-session');
@@ -264,11 +265,17 @@ app.get('/api/playlist/:id', async (req, res) => {
 
 async function checkForGuitarTabs(trackName, artistName) {
   try {
-    const response = await axios.get('https://www.songsterr.com/api/songs', {
-      params: { pattern: `${trackName} ${artistName}` }
+    const response = await axios.get('https://www.songsterr.com/', {
+      params: { pattern: `${trackName} ${artistName}` },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' }
     });
 
-    const songs = response.data;
+    const $ = cheerio.load(response.data);
+    const stateJson = $('#state').text();
+    if (!stateJson) return null;
+
+    const state = JSON.parse(stateJson);
+    const songs = state?.songs?.songs?.list;
     if (!songs?.length) return null;
 
     const normalize = (str) => str.toLowerCase().trim().replace(/[^\w\s]/g, '');
